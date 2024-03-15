@@ -67,7 +67,7 @@ public class RerResTests extends TestBaseAPI{
         createUserData.setJob("leader");
 
         CreateUserResponseModel response = given()
-                .filter(new AllureRestAssured())
+                .filter(withCustomTemplates())
                 .log().uri()
                 .log().method()
                 .log().body()
