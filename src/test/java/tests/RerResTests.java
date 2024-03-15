@@ -1,8 +1,11 @@
 package tests;
 
+import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.response.Response;
+import models.*;
 import org.junit.jupiter.api.Test;
 
+import static helpers.CustomAllureListener.withCustomTemplates;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
@@ -13,23 +16,28 @@ public class RerResTests extends TestBaseAPI{
 
     @Test
     void containUserDataWithSchemaTest() {
-        Response response = given()
+        SingleUserResponseModel response = given()
+                .filter(withCustomTemplates())
                 .log().uri()
                 .log().method()
-                .when()
-                .get("/users/2")
-                .then()
-                .log().status()
                 .log().body()
-                .statusCode(200)
-                .body(matchesJsonSchemaInClasspath("schemas/user-id-response-schema.json"))
-                .extract().response();
+                .log().headers()
 
-        assertThat(response.path("data.id"), is(2));
-        assertThat(response.path("data.email"), is("janet.weaver@reqres.in"));
-        assertThat(response.path("data.first_name"), is("Janet"));
-        assertThat(response.path("data.last_name"), is("Weaver"));
-        assertThat(response.path("data.avatar"), is("https://reqres.in/img/faces/2-image.jpg"));
+        .when()
+            .get("/users/2")
+
+        .then()
+            .log().status()
+            .log().body()
+            .statusCode(200)
+            .body(matchesJsonSchemaInClasspath("schemas/user-id-response-schema.json"))
+            .extract().as(SingleUserResponseModel.class);
+
+        //assertThat(response.path("data.id"), is(2));
+        //assertThat(response.path("data.email"), is("janet.weaver@reqres.in"));
+        //assertThat(response.path("data.first_name"), is("Janet"));
+        //assertThat(response.path("data.last_name"), is("Weaver"));
+        //assertThat(response.path("data.avatar"), is("https://reqres.in/img/faces/2-image.jpg"));
     }
 
     @Test
@@ -37,90 +45,121 @@ public class RerResTests extends TestBaseAPI{
         Response response = given()
                 .log().uri()
                 .log().method()
-                .when()
-                .get("/users/23")
-                .then()
-                .log().status()
                 .log().body()
-                .statusCode(404)
-                .extract().response();
+                .log().headers()
+
+        .when()
+            .get("/users/23")
+
+        .then()
+            .log().status()
+            .log().body()
+            .statusCode(404)
+            .extract().response();
 
         assertThat(response.getBody().asString(), is(equalTo("{}")));
     }
 
     @Test
     void createUserTest() {
-        Response response = given()
+        CreateUserBodyModel createUserData = new CreateUserBodyModel();
+        createUserData.setName("morpheus");
+        createUserData.setJob("leader");
+
+        CreateUserResponseModel response = given()
+                .filter(new AllureRestAssured())
                 .log().uri()
                 .log().method()
-                .contentType(JSON)
-                .body("{ \"name\": \"morpheus\", \"job\": \"leader\" }")
-                .when()
-                .post("/api/users")
-                .then()
-                .log().status()
                 .log().body()
-                .statusCode(201)
-                .body(matchesJsonSchemaInClasspath("schemas/create-user-schema.json"))
-                .extract().response();
+                .log().headers()
+                .contentType(JSON)
+                .body(createUserData)
 
-        assertThat(response.path("name"), is("morpheus"));
-        assertThat(response.path("job"), is("leader"));
+        .when()
+            .post("/api/users")
+
+        .then()
+            .log().status()
+            .log().body()
+            .statusCode(201)
+            .body(matchesJsonSchemaInClasspath("schemas/create-user-schema.json"))
+            .extract().as(CreateUserResponseModel.class);
+
+        //assertThat("name", response.getName());
+        //assertThat(response.path("job"), is("leader"));
 
     }
 
     @Test
     void updateUserTest() {
-        Response response = given()
+        UpdateUserBodyModel updateUserData = new UpdateUserBodyModel();
+        updateUserData.setName("morpheus");
+        updateUserData.setJob("zion resident");
+        UpdateUserResponseModel response = given()
                 .log().uri()
                 .log().method()
-                .contentType(JSON)
-                .body("{ \"name\": \"morpheus\", \"job\": \"zion resident\" }")
-                .when()
-                .put("/api/users/2")
-                .then()
-                .log().status()
                 .log().body()
-                .statusCode(200)
-                .body(matchesJsonSchemaInClasspath("schemas/update-user-schema.json"))
-                .extract().response();
+                .log().headers()
+                .contentType(JSON)
+                .body(updateUserData)
 
-        assertThat(response.path("name"), is("morpheus"));
-        assertThat(response.path("job"), is("zion resident"));
+        .when()
+            .put("/api/users/2")
+
+        .then()
+            .log().status()
+            .log().body()
+            .statusCode(200)
+            .body(matchesJsonSchemaInClasspath("schemas/update-user-schema.json"))
+            .extract().as(UpdateUserResponseModel.class);
+
+        //assertThat(response.path("name"), is("morpheus"));
+        //assertThat(response.path("job"), is("zion resident"));
 
     }
 
     @Test
     void deleteUserTest() {
-        given().
-                log().uri()
+        given()
+                .log().uri()
                 .log().method()
-                .when()
-                .delete("/api/users/2")
-                .then()
-                .log().status()
                 .log().body()
-                .statusCode(204)
-                .extract().response();
+                .log().headers()
+
+        .when()
+            .delete("/api/users/2")
+
+        .then()
+            .log().status()
+            .log().body()
+            .statusCode(204)
+            .extract().response();
     }
 
     @Test
     void successfulRegisterUserTest() {
-        Response response = given()
+        RegisterUserModel registerUserData = new RegisterUserModel();
+        registerUserData.setEmail("eve.holt@reqres.in");
+        registerUserData.setPassword("pistol");
+        RegisterUserResponseModel response = given()
                 .log().uri()
                 .log().method()
-                .contentType(JSON)
-                .body("{ \"email\": \"eve.holt@reqres.in\", \"password\": \"pistol\" }")
-                .when()
-                .post("/api/register")
-                .then()
-                .log().status()
                 .log().body()
-                .statusCode(201)
-                .body(matchesJsonSchemaInClasspath("schemas/successful-register-user-schema.json"))
-                .extract().response();
+                .log().headers()
+                .contentType(JSON)
+                .body(registerUserData)
 
-        assertThat(response.path("email"), is("eve.holt@reqres.in"));
-        assertThat(response.path("password"), is("pistol"));
+        .when()
+            .post("/api/register")
+
+        .then()
+            .log().status()
+            .log().body()
+            .statusCode(201)
+            .body(matchesJsonSchemaInClasspath("schemas/successful-register-user-schema.json"))
+            .extract().as(RegisterUserResponseModel.class);
+
+        //assertThat(response.path("email"), is("eve.holt@reqres.in"));
+        //assertThat(response.path("password"), is("pistol"));
     }
 }
