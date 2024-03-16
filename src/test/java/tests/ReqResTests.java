@@ -6,6 +6,7 @@ import models.*;
 import org.junit.jupiter.api.Test;
 
 import static helpers.CustomAllureListener.withCustomTemplates;
+import static io.qameta.allure.Allure.step;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
@@ -16,24 +17,30 @@ public class RerResTests extends TestBaseAPI{
 
     @Test
     void containUserDataWithSchemaTest() {
-        SingleUserResponseModel response = given()
+
+        SingleUserResponseModel response = step("Make request", () -> {
+            return given()
                 .filter(withCustomTemplates())
                 .log().uri()
                 .log().method()
                 .log().body()
                 .log().headers()
 
-        .when()
-            .get("/users/2")
+            .when()
+                .get("/users/2")
 
-        .then()
-            .log().status()
-            .log().body()
-            .statusCode(200)
-            .body(matchesJsonSchemaInClasspath("schemas/user-id-response-schema.json"))
-            .extract().as(SingleUserResponseModel.class);
+            .then()
+                .log().status()
+                .log().body()
+                .statusCode(200)
+                .body(matchesJsonSchemaInClasspath("schemas/user-id-response-schema.json"))
+                .extract().as(SingleUserResponseModel.class);
+        });
 
-        //assertThat(response.path("data.id"), is(2));
+        step("Check response", ()-> {
+            //assertThat(response.path("data.id"), is(2));
+        });
+
         //assertThat(response.path("data.email"), is("janet.weaver@reqres.in"));
         //assertThat(response.path("data.first_name"), is("Janet"));
         //assertThat(response.path("data.last_name"), is("Weaver"));
@@ -43,6 +50,7 @@ public class RerResTests extends TestBaseAPI{
     @Test
     void notFoundSingleUserTest() {
         Response response = given()
+                .filter(withCustomTemplates())
                 .log().uri()
                 .log().method()
                 .log().body()
@@ -66,25 +74,31 @@ public class RerResTests extends TestBaseAPI{
         createUserData.setName("morpheus");
         createUserData.setJob("leader");
 
-        CreateUserResponseModel response = given()
-                .filter(withCustomTemplates())
-                .log().uri()
-                .log().method()
-                .log().body()
-                .log().headers()
-                .contentType(JSON)
-                .body(createUserData)
+        CreateUserResponseModel createUserResponseModel = step("Make request", ()-> {
+            return given()
+                    .filter(withCustomTemplates())
+                    .log().uri()
+                    .log().method()
+                    .log().body()
+                    .log().headers()
+                    .contentType(JSON)
+                    .body(createUserData)
 
-        .when()
-            .post("/api/users")
+                    .when()
+                    .post("/api/users")
 
-        .then()
-            .log().status()
-            .log().body()
-            .statusCode(201)
-            .body(matchesJsonSchemaInClasspath("schemas/create-user-schema.json"))
-            .extract().as(CreateUserResponseModel.class);
+                    .then()
+                    .log().status()
+                    .log().body()
+                    .statusCode(201)
+                    .body(matchesJsonSchemaInClasspath("schemas/create-user-schema.json"))
+                    .extract().as(CreateUserResponseModel.class);
+        });
+        step("Check response", ()-> {
+            //assertThat(response.path(createUserData.getName()), is("morpheus"));
 
+            //assertThat(createUserResponseModel.getName()).isEqualTo("morpheus");
+        });
         //assertThat("name", response.getName());
         //assertThat(response.path("job"), is("leader"));
 
@@ -96,6 +110,7 @@ public class RerResTests extends TestBaseAPI{
         updateUserData.setName("morpheus");
         updateUserData.setJob("zion resident");
         UpdateUserResponseModel response = given()
+                .filter(withCustomTemplates())
                 .log().uri()
                 .log().method()
                 .log().body()
@@ -121,6 +136,7 @@ public class RerResTests extends TestBaseAPI{
     @Test
     void deleteUserTest() {
         given()
+                .filter(withCustomTemplates())
                 .log().uri()
                 .log().method()
                 .log().body()
@@ -142,6 +158,7 @@ public class RerResTests extends TestBaseAPI{
         registerUserData.setEmail("eve.holt@reqres.in");
         registerUserData.setPassword("pistol");
         RegisterUserResponseModel response = given()
+                .filter(withCustomTemplates())
                 .log().uri()
                 .log().method()
                 .log().body()
