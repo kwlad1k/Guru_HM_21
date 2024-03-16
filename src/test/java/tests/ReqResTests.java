@@ -1,6 +1,5 @@
 package tests;
 
-import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.response.Response;
 import models.*;
 import org.junit.jupiter.api.Test;
@@ -12,60 +11,47 @@ import static io.restassured.http.ContentType.JSON;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static specs.CreateUserSpec.createUserResponseSpec;
+import static specs.CreateUserSpec.createUserSpec;
+import static specs.SingleUserSpec.*;
 
-public class RerResTests extends TestBaseAPI{
+public class ReqResTests extends TestBaseAPI {
 
     @Test
     void containUserDataWithSchemaTest() {
-
-        SingleUserResponseModel response = step("Make request", () -> {
-            return given()
-                .filter(withCustomTemplates())
-                .log().uri()
-                .log().method()
-                .log().body()
-                .log().headers()
+        SingleUserResponseModel singleUserResponseModel = step("Make request", () ->
+            given(singleUserSpec)
 
             .when()
                 .get("/users/2")
 
             .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body(matchesJsonSchemaInClasspath("schemas/user-id-response-schema.json"))
-                .extract().as(SingleUserResponseModel.class);
-        });
+                .spec(singleUserResponseSpec)
+                .extract().as(SingleUserResponseModel.class));
 
         step("Check response", ()-> {
-            //assertThat(response.path("data.id"), is(2));
+            assertThat(singleUserResponseModel.getId(), is(equalTo("2")));
+            assertThat(singleUserResponseModel.getFirst_name(), is(equalTo("Janet")));
+            assertThat(singleUserResponseModel.getLast_name(), is(equalTo("Weaver")));
+            assertThat(singleUserResponseModel.getAvatar(), is(equalTo("https://reqres.in/img/faces/2-image.jpg")));
         });
-
-        //assertThat(response.path("data.email"), is("janet.weaver@reqres.in"));
-        //assertThat(response.path("data.first_name"), is("Janet"));
-        //assertThat(response.path("data.last_name"), is("Weaver"));
-        //assertThat(response.path("data.avatar"), is("https://reqres.in/img/faces/2-image.jpg"));
     }
 
     @Test
     void notFoundSingleUserTest() {
-        Response response = given()
-                .filter(withCustomTemplates())
-                .log().uri()
-                .log().method()
-                .log().body()
-                .log().headers()
+        Response response = step("Make request", () ->
+                given(notFoundSingleUserSpec)
 
         .when()
             .get("/users/23")
 
         .then()
-            .log().status()
-            .log().body()
-            .statusCode(404)
-            .extract().response();
+            .spec(notFoundSingleUserResponseSpec)
+            .extract().as(Response.class));
 
-        assertThat(response.getBody().asString(), is(equalTo("{}")));
+        step("Check response", () ->
+                assertThat(response.getBody().asString(), is(equalTo("{}"))));
+
     }
 
     @Test
@@ -74,34 +60,22 @@ public class RerResTests extends TestBaseAPI{
         createUserData.setName("morpheus");
         createUserData.setJob("leader");
 
-        CreateUserResponseModel createUserResponseModel = step("Make request", ()-> {
-            return given()
-                    .filter(withCustomTemplates())
-                    .log().uri()
-                    .log().method()
-                    .log().body()
-                    .log().headers()
-                    .contentType(JSON)
+        CreateUserResponseModel createUserResponseModel = step("Make request", () ->
+                given(createUserSpec)
                     .body(createUserData)
 
-                    .when()
+                .when()
                     .post("/api/users")
 
-                    .then()
-                    .log().status()
-                    .log().body()
-                    .statusCode(201)
+                .then()
+                        .spec(createUserResponseSpec)
                     .body(matchesJsonSchemaInClasspath("schemas/create-user-schema.json"))
-                    .extract().as(CreateUserResponseModel.class);
-        });
-        step("Check response", ()-> {
-            //assertThat(response.path(createUserData.getName()), is("morpheus"));
+                    .extract().as(CreateUserResponseModel.class));
 
-            //assertThat(createUserResponseModel.getName()).isEqualTo("morpheus");
+        step("Check response", () -> {
+            assertThat(createUserResponseModel.getName(), is(equalTo("morpheus")));
+            assertThat(createUserResponseModel.getJob(), is(equalTo("leader")));
         });
-        //assertThat("name", response.getName());
-        //assertThat(response.path("job"), is("leader"));
-
     }
 
     @Test
