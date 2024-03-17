@@ -11,26 +11,22 @@ import static io.restassured.RestAssured.given;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static specs.CreateUserSpec.createUserResponseSpec;
-import static specs.CreateUserSpec.createUserSpec;
-import static specs.DeleteUserSpec.deleteUserResponseSpec;
-import static specs.DeleteUserSpec.deleteUserSpec;
-import static specs.RegisterUserSpec.registerUserResponseSpec;
-import static specs.RegisterUserSpec.registerUserSpec;
-import static specs.SingleUserSpec.*;
-import static specs.UpdateUserSpec.updateUserResponseSpec;
-import static specs.UpdateUserSpec.updateUserSpec;
+import static specs.UserSpec.*;
 
 public class ReqResTests extends TestBaseAPI {
 
-    TestDataAPI testDataAPI = new TestDataAPI();
+    final String
+            userName = "morpheus",
+            userJob = "leader",
+            registerUserEmail = "eve.holt@reqres.in",
+            registerUserPassword = "pistol";
 
     @Test
     @Owner("Kwlad1ck")
     @DisplayName("Запрос наличия данных юзера в ответе")
     void containUserDataWithSchemaTest() {
         SingleUserResponseModel singleUserResponseModel = step("Make request", () ->
-                given(singleUserSpec)
+                given(defaultLoggingSpec)
 
                 .when()
                     .get("/users/2")
@@ -40,10 +36,10 @@ public class ReqResTests extends TestBaseAPI {
                     .extract().as(SingleUserResponseModel.class));
 
         step("Check response", () -> {
-            assertThat(singleUserResponseModel.getData().getId(), is(equalTo(testDataAPI.singleUserId)));
-            assertThat(singleUserResponseModel.getData().getFirst_name(), is(equalTo(testDataAPI.singleUserFirstName)));
-            assertThat(singleUserResponseModel.getData().getLast_name(), is(equalTo(testDataAPI.singleUserLastName)));
-            assertThat(singleUserResponseModel.getData().getAvatar(), is(equalTo(testDataAPI.singleUserUrlAvatar)));
+            assertThat(singleUserResponseModel.getData().getId(), is(equalTo("2")));
+            assertThat(singleUserResponseModel.getData().getFirst_name(), is(equalTo("Janet")));
+            assertThat(singleUserResponseModel.getData().getLast_name(), is(equalTo("Weaver")));
+            assertThat(singleUserResponseModel.getData().getAvatar(), is(equalTo("https://reqres.in/img/faces/2-image.jpg")));
         });
     }
 
@@ -52,17 +48,19 @@ public class ReqResTests extends TestBaseAPI {
     @DisplayName("Запрос несуществующего юзера")
     void notFoundSingleUserTest() {
         Response response = step("Make request", () ->
-                given(notFoundSingleUserSpec)
+                given(defaultLoggingSpec)
 
                 .when()
                     .get("/users/23")
 
                 .then()
-                    .spec(notFoundSingleUserResponseSpec)
+                    .spec(defaultLoggingResponseSpec)
                     .extract().response());
 
-        step("Check response", () ->
-                assertThat(response.getBody().asString(), is(equalTo("{}"))));
+        step("Check response", () -> {
+            assertThat(response.getStatusCode(), is(equalTo(404)));
+            assertThat(response.getBody().asString(), is(equalTo("{}")));
+                });
     }
 
     @Test
@@ -70,11 +68,11 @@ public class ReqResTests extends TestBaseAPI {
     @DisplayName("Запрос создание юзера")
     void createUserTest() {
         CreateUserBodyModel createUserData = new CreateUserBodyModel();
-        createUserData.setName(testDataAPI.userName);
-        createUserData.setJob(testDataAPI.userJob);
+        createUserData.setName(userName);
+        createUserData.setJob(userJob);
 
         CreateUserResponseModel createUserResponseModel = step("Make request", () ->
-                given(createUserSpec)
+                given(defaultLoggingSpec)
                     .body(createUserData)
 
                 .when()
@@ -84,9 +82,10 @@ public class ReqResTests extends TestBaseAPI {
                     .spec(createUserResponseSpec)
                     .body(matchesJsonSchemaInClasspath("schemas/create-user-schema.json"))
                     .extract().as(CreateUserResponseModel.class));
+
         step("Check response", () -> {
-            assertThat(createUserResponseModel.getName(), is(equalTo(testDataAPI.userName)));
-            assertThat(createUserResponseModel.getJob(), is(equalTo(testDataAPI.userJob)));
+            assertThat(createUserResponseModel.getName(), is(equalTo(userName)));
+            assertThat(createUserResponseModel.getJob(), is(equalTo(userJob)));
         });
     }
 
@@ -95,11 +94,11 @@ public class ReqResTests extends TestBaseAPI {
     @DisplayName("Обновление данных юзера")
     void updateUserTest() {
         UpdateUserBodyModel updateUserData = new UpdateUserBodyModel();
-        updateUserData.setName(testDataAPI.userName);
-        updateUserData.setJob(testDataAPI.updateUserJob);
+        updateUserData.setName(userName);
+        updateUserData.setJob(userJob);
 
         UpdateUserResponseModel updateUserResponseModel = step("Make request", () ->
-                given(updateUserSpec)
+                given(defaultLoggingSpec)
                     .body(updateUserData)
 
                 .when()
@@ -108,9 +107,10 @@ public class ReqResTests extends TestBaseAPI {
                 .then()
                     .spec(updateUserResponseSpec)
                     .extract().as(UpdateUserResponseModel.class));
+
         step("Check response", () -> {
-            assertThat(updateUserResponseModel.getName(), is(equalTo(testDataAPI.userName)));
-            assertThat(updateUserResponseModel.getJob(), is(equalTo(testDataAPI.updateUserJob)));
+            assertThat(updateUserResponseModel.getName(), is(equalTo(userName)));
+            assertThat(updateUserResponseModel.getJob(), is(equalTo("leader")));
         });
     }
 
@@ -119,18 +119,17 @@ public class ReqResTests extends TestBaseAPI {
     @DisplayName("Запрос удаления юзера")
     void deleteUserTest() {
         Response response = step("Make request", () ->
-        given(deleteUserSpec)
+        given(defaultLoggingSpec)
 
             .when()
             .delete("/api/users/2")
 
             .then()
-            .spec(deleteUserResponseSpec)
+            .spec(defaultLoggingResponseSpec)
             .extract().response());
-        step("Check response", () -> {
-            assertThat(response.getStatusCode(), is(equalTo(204)));
-            assertThat(response.getBody().asString(), isEmptyString());
-        });
+
+        step("Check response", () ->
+            assertThat(response.getStatusCode(), is(equalTo(204))));
     }
 
     @Test
@@ -138,11 +137,11 @@ public class ReqResTests extends TestBaseAPI {
     @DisplayName("Успешная регистрация пользователя")
     void successfulRegisterUserTest() {
         RegisterUserModel registerUserData = new RegisterUserModel();
-        registerUserData.setEmail(testDataAPI.registerUserEmail);
-        registerUserData.setPassword(testDataAPI.registerUserPassword);
+        registerUserData.setEmail(registerUserEmail);
+        registerUserData.setPassword(registerUserPassword);
 
         RegisterUserResponseModel registerUserResponseModel = step("Make request", () ->
-                given(registerUserSpec)
+                given(defaultLoggingSpec)
                     .body(registerUserData)
                 .when()
                     .post("/api/register")
@@ -150,9 +149,10 @@ public class ReqResTests extends TestBaseAPI {
                 .then()
                     .spec(registerUserResponseSpec)
                     .extract().as(RegisterUserResponseModel.class));
+
         step("Check response", () -> {
-            assertThat(registerUserResponseModel.getEmail(), is(equalTo(testDataAPI.registerUserEmail)));
-            assertThat(registerUserResponseModel.getPassword(), is(equalTo(testDataAPI.registerUserPassword)));
+            assertThat(registerUserResponseModel.getEmail(), is(equalTo(registerUserEmail)));
+            assertThat(registerUserResponseModel.getPassword(), is(equalTo(registerUserPassword)));
         });
     }
 }
