@@ -16,6 +16,7 @@ public class UserSpec {
     public static final RequestSpecification defaultLoggingSpec = with()
             .filter(withCustomTemplates()) 
             .log().method()
+            .log().headers()
             .log().uri()
             .contentType(JSON);
 
